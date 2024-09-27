@@ -12,6 +12,9 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 public class StdioLauncher {
+
+    public static Q3LanguageServer SERVER = new Q3LanguageServer();
+
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         LogManager.getLogManager().reset();
         Logger gloabalLogger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
@@ -21,12 +24,11 @@ public class StdioLauncher {
 
     }
 
-    private static void startServer(InputStream inputStream, OutputStream outputStream) throws ExecutionException, InterruptedException {
+    static void startServer(InputStream inputStream, OutputStream outputStream) throws ExecutionException, InterruptedException {
 
-        Q3LanguageServer server = new Q3LanguageServer();
-        Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(server, inputStream, outputStream);
+        Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(SERVER, inputStream, outputStream);
         LanguageClient client = launcher.getRemoteProxy();
-        server.connect(client);
+        SERVER.connect(client);
 
         Future<?> startListening = launcher.startListening();
         startListening.get();
