@@ -6,6 +6,14 @@
 
     <artifactId>launcher</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <dependencies>
+        <dependency>
+            <groupId>dev.aronba</groupId>
+            <artifactId>language-server</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
 
     <parent>
         <artifactId>LSP4Q3</artifactId>
