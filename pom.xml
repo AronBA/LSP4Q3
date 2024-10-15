@@ -10,7 +10,7 @@
         <dependency>
             <groupId>org.eclipse.lsp4j</groupId>
             <artifactId>org.eclipse.lsp4j</artifactId>
-            <version>${lsp4j.version}</version>
+            <version>0.23.1</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -28,6 +28,11 @@
             <artifactId>mockito-core</artifactId>
             <version>5.11.0</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.neostralis.q3</groupId>
+            <artifactId>q3-standalone-compiler</artifactId>
+            <version>0.9.12-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <modules>
@@ -51,7 +56,4 @@
             </plugin>
         </plugins>
     </build>
-    <properties>
-        <lsp4j.version>0.23.1</lsp4j.version>
-    </properties>
 </project>

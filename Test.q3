@@ -1,0 +1,15 @@
+class MyClass(){
+    @id = 123;
+
+
+
+
+    $foo(){
+        int = 123;
+
+        newINt = 1 / 0;
+
+
+        return "test";
+    }
+}
