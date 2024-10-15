@@ -15,6 +15,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -46,9 +47,8 @@ public class Q3TextDocumentService implements TextDocumentService {
         if (result.getParseErrors() != null && !result.getParseErrors().isEmpty()) {
             for (ParseException e : result.getParseErrors().getExceptions()) {
                 Line line = e.getLine();
-                client.logMessage(new MessageParams(MessageType.Info, "Error at line " + line.getLine() + " col " + line.getCol() + ": " + e.getMessage()));
-                String lineContent = getLineContent(file, line.getLine());
-                Range range = getWordRange(lineContent, line.getLine(), line.getCol());
+                String lineContent = getLineContent(file, line.getLine() - 1);
+                Range range = getWordRange(lineContent, line.getLine() -1 , line.getCol());
                 Diagnostic diagnostic = new Diagnostic(range, e.getMessage(), DiagnosticSeverity.Error, file.getPath(),lineContent);
                 diagnosticList.add(diagnostic);
             }
@@ -72,14 +72,14 @@ public class Q3TextDocumentService implements TextDocumentService {
 
 
             String lineContent = getLineContent(file, warning.getLine().getLine());
-            Range range = getWordRange(lineContent,warning.getLine().getLine(), warning.getLine().getCol());
-            diagnostic.setRange(new Range(new Position(warning.getLine().getLine(), warning.getLine().getCol()), new Position(warning.getLine().getLine(), warning.getLine().getCol())));
+            Range range = getWordRange(lineContent,warning.getLine().getLine() - 1, warning.getLine().getCol() - 1);
+            diagnostic.setRange(range);
             diagnosticList.add(diagnostic);
         }
 
         client.logMessage(new MessageParams(MessageType.Info, diagnosticList.toString()));
         client.showMessage(new MessageParams(MessageType.Info, "Document Diagnosed"));
-        client.publishDiagnostics(new PublishDiagnosticsParams(uri, diagnosticList));
+        client.publishDiagnostics(new PublishDiagnosticsParams(uri, Collections.emptyList()));
         return CompletableFuture.completedFuture(new DocumentDiagnosticReport(new RelatedFullDocumentDiagnosticReport(diagnosticList)));
     }
 
@@ -105,15 +105,10 @@ public class Q3TextDocumentService implements TextDocumentService {
         return new Range(new Position(lineNumber, start), new Position(lineNumber, end));
     }
 
-    private Diagnostic getDiagnostic(Warning warning) {
-
-        return diagnostic;
-    }
 
     @Override
     public void didOpen(DidOpenTextDocumentParams didOpenTextDocumentParams) {
         if (client != null) client.showMessage(new MessageParams(MessageType.Info, "Document Opened"));
-
     }
 
     @Override
