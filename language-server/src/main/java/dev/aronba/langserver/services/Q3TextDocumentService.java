@@ -2,34 +2,31 @@ package dev.aronba.langserver.services;
 
 import dev.aronba.langserver.LanguageServerContext;
 import dev.aronba.langserver.diagnostics.DiagnosticsService;
-import net.neostralis.q3.compiler.Q3Compiler;
-import net.neostralis.q3.compiler.typechecker.Warning;
-import net.neostralis.q3.parsers.Line;
-import net.neostralis.q3.parsers.exceptions.ParseException;
+import dev.aronba.langserver.formatting.FormattingService;
 import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.services.TextDocumentService;
 
-import java.io.File;
-import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public class Q3TextDocumentService implements org.eclipse.lsp4j.services.TextDocumentService {
 
 
+    //map uri to content
     private final Map<String, String> documentContentMap = new HashMap<>();
 
     private final LanguageServerContext languageServerContext;
     private final DiagnosticsService diagnosticService;
+    private final FormattingService formattingService;
 
     public Q3TextDocumentService(LanguageServerContext languageServerContext) {
         this.languageServerContext = languageServerContext;
+        this.formattingService = new FormattingService(languageServerContext);
         this.diagnosticService = new DiagnosticsService(languageServerContext);
     }
 
     @Override
     public CompletableFuture<DocumentDiagnosticReport> diagnostic(DocumentDiagnosticParams params) {
-
-
         String uri = params.getTextDocument().getUri();
         String content = documentContentMap.get(uri);
 
@@ -39,8 +36,6 @@ public class Q3TextDocumentService implements org.eclipse.lsp4j.services.TextDoc
 
         List<Diagnostic> diagnosticList = diagnosticService.analyze(documentContentMap.get(params.getTextDocument().getUri()),uri);
         return CompletableFuture.completedFuture(new DocumentDiagnosticReport(new RelatedFullDocumentDiagnosticReport(diagnosticList)));
-
-
     }
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
@@ -68,6 +63,13 @@ public class Q3TextDocumentService implements org.eclipse.lsp4j.services.TextDoc
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
         diagnostic(new DocumentDiagnosticParams(params.getTextDocument()));
+    }
+
+    @Override
+    public CompletableFuture<List<? extends TextEdit>> formatting(DocumentFormattingParams params) {
+
+        List<? extends TextEdit> textEdits = formattingService.format(documentContentMap.get(params.getTextDocument().getUri()));
+        return CompletableFuture.completedFuture(textEdits);
     }
 
     @Override

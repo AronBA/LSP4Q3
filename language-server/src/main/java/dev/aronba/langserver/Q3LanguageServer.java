@@ -33,6 +33,9 @@ public class Q3LanguageServer implements LanguageServer, LanguageClientAware {
     }
 
     @Override
+    public void setTrace(SetTraceParams params) {}
+
+    @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams initializeParams) {
         languageServerContext.getClient().showMessage(new MessageParams(MessageType.Info, "LSP Initializing"));
 
@@ -54,7 +57,7 @@ public class Q3LanguageServer implements LanguageServer, LanguageClientAware {
 //        capabilities.setDocumentSymbolProvider(true);
 //        capabilities.setWorkspaceSymbolProvider(true);
 //        capabilities.setCodeActionProvider(new CodeActionOptions());
-//        capabilities.setDocumentFormattingProvider(true);
+        capabilities.setDocumentFormattingProvider(true);
 //        capabilities.setDocumentRangeFormattingProvider(true);
 //        capabilities.setRenameProvider(true);
         capabilities.setDiagnosticProvider(new DiagnosticRegistrationOptions());
