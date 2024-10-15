@@ -1,9 +1,7 @@
-package dev.aronba.langserver;
+package dev.aronba.langserver.diagnostics;
 
 import net.neostralis.q3.compiler.Q3Compiler;
-import net.neostralis.q3.compiler.typechecker.Warnings;
 import net.neostralis.q3.parsers.Line;
-import org.eclipse.lsp4j.services.LanguageClient;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,7 +1,12 @@
 package dev.aronba.langserver;
 
+import dev.aronba.langserver.services.Q3NotebookDocumentService;
+import dev.aronba.langserver.services.Q3TextDocumentService;
+import dev.aronba.langserver.services.Q3WorkspaceService;
 import org.eclipse.lsp4j.*;
-import org.eclipse.lsp4j.services.*;
+import org.eclipse.lsp4j.services.LanguageClient;
+import org.eclipse.lsp4j.services.LanguageClientAware;
+import org.eclipse.lsp4j.services.LanguageServer;
 
 import java.util.List;
 import java.util.UUID;
@@ -10,32 +15,31 @@ import java.util.concurrent.CompletableFuture;
 public class Q3LanguageServer implements LanguageServer, LanguageClientAware {
 
 
-    private Q3TextDocumentService textDocumentService;
-    private Q3WorkspaceService workspaceService;
-    private LanguageClient client;
-    private ClientCapabilities clientCababilities;
+    private final Q3TextDocumentService q3TextDocumentService;
+    private final Q3WorkspaceService q3WorkspaceService;
+    private final Q3NotebookDocumentService q3NotebookDocumentService;
+
+    private ClientCapabilities clientCapabilities;
+    private final LanguageServerContext languageServerContext;
 
     private int errorCode = 1;
 
     public Q3LanguageServer() {
-        textDocumentService = new Q3TextDocumentService();
-        workspaceService = new Q3WorkspaceService();
-    }
+        languageServerContext = LanguageServerContext.builder().build();
 
-
-    @Override
-    public void setTrace(SetTraceParams params) {
-        return;
+        q3TextDocumentService = new Q3TextDocumentService(languageServerContext);
+        q3WorkspaceService = new Q3WorkspaceService(languageServerContext);
+        q3NotebookDocumentService = new Q3NotebookDocumentService(languageServerContext);
     }
 
     @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams initializeParams) {
-        client.showMessage(new MessageParams(MessageType.Info, "LSP Initializing"));
+        languageServerContext.getClient().showMessage(new MessageParams(MessageType.Info, "LSP Initializing"));
 
         ServerCapabilities capabilities = getServerCapabilities();
 
         InitializeResult result = new InitializeResult(capabilities);
-        this.clientCababilities = initializeParams.getCapabilities();
+        this.clientCapabilities = initializeParams.getCapabilities();
 
         return CompletableFuture.supplyAsync(() -> result);
     }
@@ -57,20 +61,21 @@ public class Q3LanguageServer implements LanguageServer, LanguageClientAware {
         return capabilities;
     }
 
+
+
     @Override
     public void initialized(InitializedParams params) {
         LanguageServer.super.initialized(params);
         if (isDynamicCompletionRegistrationSupported()) {
-
             CompletionOptions completionOptions = new CompletionOptions();
             completionOptions.setResolveProvider(true);
             Registration registration = new Registration(UUID.randomUUID().toString(),"textDocument/completion", completionOptions);
-            client.registerCapability(new RegistrationParams(List.of(registration)));
+            languageServerContext.getClient().registerCapability(new RegistrationParams(List.of(registration)));
         }
     }
 
     private boolean isDynamicCompletionRegistrationSupported() {
-        TextDocumentClientCapabilities textDocumentClientCapabilities = this.clientCababilities.getTextDocument();
+        TextDocumentClientCapabilities textDocumentClientCapabilities = this.clientCapabilities.getTextDocument();
         return textDocumentClientCapabilities != null && textDocumentClientCapabilities.getCompletion() != null
                 && Boolean.FALSE.equals(textDocumentClientCapabilities.getCompletion().getDynamicRegistration());
     }
@@ -87,19 +92,21 @@ public class Q3LanguageServer implements LanguageServer, LanguageClientAware {
     }
 
     @Override
-    public TextDocumentService getTextDocumentService() {
-        return this.textDocumentService;
+    public Q3NotebookDocumentService getNotebookDocumentService() {
+        return q3NotebookDocumentService;
+    }
+    @Override
+    public org.eclipse.lsp4j.services.TextDocumentService getTextDocumentService() {
+        return this.q3TextDocumentService;
     }
 
     @Override
-    public WorkspaceService getWorkspaceService() {
-        return this.workspaceService;
+    public org.eclipse.lsp4j.services.WorkspaceService getWorkspaceService() {
+        return this.q3WorkspaceService;
     }
 
     @Override
     public void connect(LanguageClient languageClient) {
-        this.client = languageClient;
-        this.textDocumentService.setClient(languageClient);
-        client.showMessage(new MessageParams(MessageType.Info,"Connected"));
+        this.languageServerContext.setClient(languageClient);
     }
 }
