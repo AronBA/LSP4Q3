@@ -1,13 +1,16 @@
 package dev.aronba.langserver;
 
-import dev.aronba.langserver.services.Q3NotebookDocumentService;
 import dev.aronba.langserver.services.Q3TextDocumentService;
-import dev.aronba.langserver.services.Q3WorkspaceService;
-import org.eclipse.lsp4j.*;
-import org.eclipse.lsp4j.services.LanguageClient;
-import org.eclipse.lsp4j.services.LanguageClientAware;
-import org.eclipse.lsp4j.services.LanguageServer;
 
+import dev.aronba.langserver.buffer.BufferedWorkspace;
+import dev.aronba.langserver.utils.LanguageServerContext;
+import lombok.Getter;
+import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.services.*;
+
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -16,54 +19,50 @@ public class Q3LanguageServer implements LanguageServer, LanguageClientAware {
 
 
     private final Q3TextDocumentService q3TextDocumentService;
-    private final Q3WorkspaceService q3WorkspaceService;
-    private final Q3NotebookDocumentService q3NotebookDocumentService;
 
     private ClientCapabilities clientCapabilities;
     private final LanguageServerContext languageServerContext;
 
+    @Getter
     private int errorCode = 1;
 
     public Q3LanguageServer() {
         languageServerContext = LanguageServerContext.builder().build();
-
         q3TextDocumentService = new Q3TextDocumentService(languageServerContext);
-        q3WorkspaceService = new Q3WorkspaceService(languageServerContext);
-        q3NotebookDocumentService = new Q3NotebookDocumentService(languageServerContext);
     }
 
     @Override
-    public void setTrace(SetTraceParams params) {}
+    public void setTrace(SetTraceParams params) { /* document why this method is empty */ }
 
     @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams initializeParams) {
-        languageServerContext.getClient().showMessage(new MessageParams(MessageType.Info, "LSP Initializing"));
 
         ServerCapabilities capabilities = getServerCapabilities();
-
         InitializeResult result = new InitializeResult(capabilities);
         this.clientCapabilities = initializeParams.getCapabilities();
 
-        return CompletableFuture.supplyAsync(() -> result);
+        String uriString = initializeParams.getWorkspaceFolders().getFirst().getUri();
+        URI uri = null;
+        try {
+            uri = new URI(uriString);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+        File file = new File(uri);
+
+        BufferedWorkspace bufferedWorkspace = new BufferedWorkspace(file, languageServerContext.getClient());
+        bufferedWorkspace.indexWorkspace();
+        languageServerContext.setWorkspace(bufferedWorkspace);
+
+        return CompletableFuture.completedFuture(result);
     }
 
     private ServerCapabilities getServerCapabilities() {
         ServerCapabilities capabilities = new ServerCapabilities();
         capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
-//        capabilities.setCompletionProvider(new CompletionOptions());
-        capabilities.setHoverProvider(true);
-//        capabilities.setDefinitionProvider(true);
-//        capabilities.setReferencesProvider(true);
-//        capabilities.setDocumentSymbolProvider(true);
-//        capabilities.setWorkspaceSymbolProvider(true);
-//        capabilities.setCodeActionProvider(new CodeActionOptions());
-        capabilities.setDocumentFormattingProvider(true);
-//        capabilities.setDocumentRangeFormattingProvider(true);
-//        capabilities.setRenameProvider(true);
         capabilities.setDiagnosticProvider(new DiagnosticRegistrationOptions());
         return capabilities;
     }
-
 
 
     @Override
@@ -75,6 +74,7 @@ public class Q3LanguageServer implements LanguageServer, LanguageClientAware {
             Registration registration = new Registration(UUID.randomUUID().toString(),"textDocument/completion", completionOptions);
             languageServerContext.getClient().registerCapability(new RegistrationParams(List.of(registration)));
         }
+        languageServerContext.getClient().showMessage(new MessageParams(MessageType.Info, "Q3 Language Server initialized"));
     }
 
     private boolean isDynamicCompletionRegistrationSupported() {
@@ -91,12 +91,17 @@ public class Q3LanguageServer implements LanguageServer, LanguageClientAware {
 
     @Override
     public void exit() {
+        if (errorCode != 0) {
+            languageServerContext.getClient().showMessage(new MessageParams(MessageType.Error, "Q3 Language Server exited with error code " + errorCode));
+        } else {
+            languageServerContext.getClient().showMessage(new MessageParams(MessageType.Info, "Q3 Language Server exited successfully"));
+        }
         System.exit(errorCode);
     }
 
     @Override
-    public Q3NotebookDocumentService getNotebookDocumentService() {
-        return q3NotebookDocumentService;
+    public NotebookDocumentService getNotebookDocumentService() {
+        return null;
     }
     @Override
     public org.eclipse.lsp4j.services.TextDocumentService getTextDocumentService() {
@@ -104,8 +109,8 @@ public class Q3LanguageServer implements LanguageServer, LanguageClientAware {
     }
 
     @Override
-    public org.eclipse.lsp4j.services.WorkspaceService getWorkspaceService() {
-        return this.q3WorkspaceService;
+    public WorkspaceService getWorkspaceService() {
+        return null;
     }
 
     @Override

@@ -6,20 +6,18 @@ import org.eclipse.lsp4j.services.LanguageClientAware;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class StdioLauncher {
 
     public static Q3LanguageServer SERVER = new Q3LanguageServer();
 
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
-
+    public static void main(String[] args) {
         startServer(System.in, System.out);
 
     }
 
-    static void startServer(InputStream inputStream, OutputStream outputStream) throws ExecutionException, InterruptedException {
+    static void startServer(InputStream inputStream, OutputStream outputStream) {
 
         Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(SERVER, inputStream, outputStream);
         if (SERVER != null && SERVER instanceof LanguageClientAware) {

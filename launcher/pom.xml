@@ -63,7 +63,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>/home/aron/Development/TypeScript/q3extension/server</outputDirectory>
+                            <outputDirectory>/home/aron/Development/TypeScript/q3Extension/server</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${basedir}/target</directory>
