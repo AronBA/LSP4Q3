@@ -15,7 +15,7 @@ public class Q3TextDocumentService implements TextDocumentService {
 
     public Q3TextDocumentService(LanguageServerContext languageServerContext) {
         this.languageServerContext = languageServerContext;
-        this.diagnosticService = new DiagnosticsService(languageServerContext);
+        this.diagnosticService = new DiagnosticsService();
     }
 
 

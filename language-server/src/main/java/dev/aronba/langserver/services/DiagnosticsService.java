@@ -1,7 +1,6 @@
 package dev.aronba.langserver.services;
 
 import dev.aronba.langserver.buffer.BufferedFile;
-import dev.aronba.langserver.utils.LanguageServerContext;
 import net.neostralis.q3.compiler.Q3Compiler;
 import net.neostralis.q3.compiler.typechecker.Warning;
 import net.neostralis.q3.parsers.Line;
@@ -14,44 +13,37 @@ import java.util.List;
 
 public class DiagnosticsService {
 
-    private final LanguageServerContext languageServerContext;
-    public DiagnosticsService(LanguageServerContext languageServerContext) {
-        this.languageServerContext = languageServerContext;
+    public List<Diagnostic> analyze(BufferedFile bufferedFile) {
+        try {
+            String content = bufferedFile.getBufferedContent();
+            List<Q3Compiler.Input> inputs = List.of(new Q3Compiler.Input(new Line.OriginFile(bufferedFile), content));
+            Q3Compiler.Result result = new Q3Compiler("LSP-COMPILER", inputs, true).run();
+
+            List<Diagnostic> diagnosticList = new ArrayList<>();
+            addParseErrors(result, content, bufferedFile, diagnosticList);
+            addWarnings(result, content, diagnosticList);
+
+            return diagnosticList;
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
     }
 
-    public List<Diagnostic> analyze(BufferedFile bufferedFile) {
-        try{
-
-        String content = bufferedFile.getBufferedContent();
-        List<Q3Compiler.Input> inputs = List.of(new Q3Compiler.Input(new Line.OriginFile(bufferedFile), content));
-        Q3Compiler.Result result = new Q3Compiler("LSP-COMPILER", inputs, true).run();
-
-        List<Diagnostic> diagnosticList = new ArrayList<>();
-
+    private void addParseErrors(Q3Compiler.Result result, String content, BufferedFile bufferedFile, List<Diagnostic> diagnosticList) {
         if (result.getParseErrors() != null && !result.getParseErrors().isEmpty()) {
             for (ParseException e : result.getParseErrors().getExceptions()) {
                 Line line = e.getLine();
                 String lineContent = getLineContent(content, line.getLine() - 1);
                 Range range = getWordRange(lineContent, line.getLine() - 1, line.getCol());
-                Diagnostic diagnostic = new Diagnostic(range, e.getMessage(), DiagnosticSeverity.Error, bufferedFile.getPath());
-                diagnosticList.add(diagnostic);
+                diagnosticList.add(new Diagnostic(range, e.getMessage(), DiagnosticSeverity.Error, bufferedFile.getPath()));
             }
         }
+    }
 
+    private void addWarnings(Q3Compiler.Result result, String content, List<Diagnostic> diagnosticList) {
         for (Warning warning : result.getWarnings().getWarnings()) {
             Diagnostic diagnostic = new Diagnostic();
-
-            switch (warning.getSeverity()) {
-                case ERROR:
-                    diagnostic.setSeverity(DiagnosticSeverity.Error);
-                    break;
-                case WARN:
-                    diagnostic.setSeverity(DiagnosticSeverity.Warning);
-                    break;
-                case INFO:
-                    diagnostic.setSeverity(DiagnosticSeverity.Information);
-                    break;
-            }
+            diagnostic.setSeverity(getSeverity(warning.getSeverity()));
             diagnostic.setMessage(warning.getMessage());
 
             String lineContent = getLineContent(content, warning.getLine().getLine());
@@ -59,11 +51,14 @@ public class DiagnosticsService {
             diagnostic.setRange(range);
             diagnosticList.add(diagnostic);
         }
-        return diagnosticList;
+    }
 
-        } catch (Exception e) {
-            return Collections.emptyList();
-        }
+    private DiagnosticSeverity getSeverity(Warning.Severity severity) {
+        return switch (severity) {
+            case ERROR -> DiagnosticSeverity.Error;
+            case WARN -> DiagnosticSeverity.Warning;
+            case INFO -> DiagnosticSeverity.Information;
+        };
     }
 
     private String getLineContent(String content, int lineNumber) {
@@ -75,7 +70,7 @@ public class DiagnosticsService {
         int start = charPosition;
         int end = charPosition;
 
-        while (start > 0 && start - 1 < lineContent.length() && Character.isLetterOrDigit(lineContent.charAt(start - 1))) {
+        while (start > 0 && Character.isLetterOrDigit(lineContent.charAt(start - 1))) {
             start--;
         }
         while (end < lineContent.length() && Character.isLetterOrDigit(lineContent.charAt(end))) {
