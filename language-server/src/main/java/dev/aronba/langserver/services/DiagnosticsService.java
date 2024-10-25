@@ -1,15 +1,15 @@
-package dev.aronba.langserver.diagnostics;
+package dev.aronba.langserver.services;
 
-import dev.aronba.langserver.LanguageServerContext;
+import dev.aronba.langserver.buffer.BufferedFile;
+import dev.aronba.langserver.utils.LanguageServerContext;
 import net.neostralis.q3.compiler.Q3Compiler;
 import net.neostralis.q3.compiler.typechecker.Warning;
 import net.neostralis.q3.parsers.Line;
 import net.neostralis.q3.parsers.exceptions.ParseException;
 import org.eclipse.lsp4j.*;
 
-import java.io.File;
-import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class DiagnosticsService {
@@ -19,9 +19,11 @@ public class DiagnosticsService {
         this.languageServerContext = languageServerContext;
     }
 
-    public List<Diagnostic> analyze(String content, String uri) {
+    public List<Diagnostic> analyze(BufferedFile bufferedFile) {
+        try{
 
-        List<Q3Compiler.Input> inputs = List.of(new Q3Compiler.Input(new Line.OriginFile(new File(URI.create(uri))), content));
+        String content = bufferedFile.getBufferedContent();
+        List<Q3Compiler.Input> inputs = List.of(new Q3Compiler.Input(new Line.OriginFile(bufferedFile), content));
         Q3Compiler.Result result = new Q3Compiler("LSP-COMPILER", inputs, true).run();
 
         List<Diagnostic> diagnosticList = new ArrayList<>();
@@ -31,7 +33,7 @@ public class DiagnosticsService {
                 Line line = e.getLine();
                 String lineContent = getLineContent(content, line.getLine() - 1);
                 Range range = getWordRange(lineContent, line.getLine() - 1, line.getCol());
-                Diagnostic diagnostic = new Diagnostic(range, e.getMessage(), DiagnosticSeverity.Error, uri, lineContent);
+                Diagnostic diagnostic = new Diagnostic(range, e.getMessage(), DiagnosticSeverity.Error, bufferedFile.getPath());
                 diagnosticList.add(diagnostic);
             }
         }
@@ -57,8 +59,11 @@ public class DiagnosticsService {
             diagnostic.setRange(range);
             diagnosticList.add(diagnostic);
         }
-
         return diagnosticList;
+
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
     }
 
     private String getLineContent(String content, int lineNumber) {
