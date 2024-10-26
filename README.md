@@ -4,17 +4,9 @@ The **Q3 Language Server** is a Java-based server that powers the LSP support fo
 
 ## Key Features
 
-- **Code Completion**: Offers intelligent suggestions based on context, making coding faster and reducing errors.
-  
-- **Go to Definition**: Enables quick navigation to function or variable definitions within Q3 projects.
-
-- **Hover Information**: Displays useful information about symbols (e.g., types, documentation) when hovering over elements in the code.
-
-- **Find References**: Locates all usages of a symbol across the project, simplifying code analysis and refactoring.
-
-- **Document Formatting**: Automatically formats Q3 code based on a predefined or customizable style guide.
-
 - **Diagnostics**: Provides real-time error checking and reporting to catch issues as you write code.
+
+- more if i have time :(
 
 ## Requirements
 
