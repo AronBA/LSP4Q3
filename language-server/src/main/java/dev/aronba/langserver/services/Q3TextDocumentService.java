@@ -5,8 +5,11 @@ import dev.aronba.langserver.utils.LanguageServerContext;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+
+import static dev.aronba.langserver.utils.CommonUtils.uriToPath;
 
 public class Q3TextDocumentService implements TextDocumentService {
 
@@ -21,17 +24,20 @@ public class Q3TextDocumentService implements TextDocumentService {
 
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
-        languageServerContext.getWorkspace().openFileInBuffer(params.getTextDocument().getUri());
+        Path uriPath = uriToPath(params.getTextDocument().getUri());
+        languageServerContext.getWorkspace().openFileInBuffer(uriPath);
     }
 
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
-        languageServerContext.getWorkspace().changeFileInBuffer(params.getTextDocument().getUri(), params.getContentChanges());
+        Path uriPath = uriToPath(params.getTextDocument().getUri());
+        languageServerContext.getWorkspace().changeFileInBuffer(uriPath,params.getContentChanges());
     }
 
     @Override
     public void didClose(DidCloseTextDocumentParams params) {
-        languageServerContext.getWorkspace().closeFileInBuffer(params.getTextDocument().getUri());
+        Path uriPath = uriToPath(params.getTextDocument().getUri());
+        languageServerContext.getWorkspace().closeFileInBuffer(uriPath);
     }
 
     @Override
@@ -41,8 +47,8 @@ public class Q3TextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<DocumentDiagnosticReport> diagnostic(DocumentDiagnosticParams params) {
-        String uri = params.getTextDocument().getUri();
-        BufferedFile file = languageServerContext.getWorkspace().getBufferedFile(uri);
+        Path uriPath = uriToPath(params.getTextDocument().getUri());
+        BufferedFile file = languageServerContext.getWorkspace().getBufferedFile(uriPath);
         List<Diagnostic> diagnosticReport = diagnosticService.analyze(file);
         return CompletableFuture.completedFuture(new DocumentDiagnosticReport(new RelatedFullDocumentDiagnosticReport(diagnosticReport)));
     }

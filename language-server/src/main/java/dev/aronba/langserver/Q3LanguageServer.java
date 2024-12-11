@@ -42,7 +42,7 @@ public class Q3LanguageServer implements LanguageServer, LanguageClientAware {
         this.clientCapabilities = initializeParams.getCapabilities();
 
         String uriString = initializeParams.getWorkspaceFolders().getFirst().getUri();
-        URI uri = null;
+        URI uri;
         try {
             uri = new URI(uriString);
         } catch (URISyntaxException e) {

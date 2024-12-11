@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BufferedWorkspace {
 
     private final File rootFolder;
-    private final ConcurrentHashMap<String, File> files = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, BufferedFile> bufferedFiles = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Path, File> files = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Path, BufferedFile> bufferedFiles = new ConcurrentHashMap<>();
     private final LanguageClient languageClient;
 
     public BufferedWorkspace(File rootFolder, LanguageClient languageClient) {
@@ -32,11 +33,10 @@ public class BufferedWorkspace {
     /**
      * Opens a file and reads its content
      *
-     * @param clientURI the URI of the file
+     * @param path the Path of the file
      */
-    public void openFileInBuffer(String clientURI) {
-        String uri = fixURI(clientURI);
-        File file = files.get(uri);
+    public void openFileInBuffer(Path path) {
+        File file = files.get(path);
 
         if (file == null) {
             return;
@@ -44,30 +44,30 @@ public class BufferedWorkspace {
 
         BufferedFile bufferedFile = new BufferedFile(file.getAbsolutePath());
         readContentIntoBuffer(bufferedFile);
-        bufferedFiles.put(uri, bufferedFile);
+        bufferedFiles.put(path, bufferedFile);
     }
 
     /**
      * Closes a file by removing it from the buffer
      *
-     * @param uri the URI of the file
+     * @param path the URI of the file
      */
-    public void closeFileInBuffer(String uri) {
-        bufferedFiles.remove(fixURI(uri));
+    public void closeFileInBuffer(Path path) {
+        bufferedFiles.remove(path);
     }
 
     /**
      * Changes the content of a file in the buffer
      *
-     * @param uri     the URI of the file
+     * @param path     the URI of the file
      * @param changes the changes to apply
      */
-    public void changeFileInBuffer(String uri, List<TextDocumentContentChangeEvent> changes) {
-        bufferedFiles.get(fixURI(uri)).updateBufferedContent(changes);
+    public void changeFileInBuffer(Path path, List<TextDocumentContentChangeEvent> changes) {
+        bufferedFiles.get(path).updateBufferedContent(changes);
     }
 
-    public BufferedFile getBufferedFile(String uri) {
-        return bufferedFiles.get(fixURI(uri));
+    public BufferedFile getBufferedFile(Path path) {
+        return bufferedFiles.get(path);
     }
 
     /**
@@ -75,26 +75,11 @@ public class BufferedWorkspace {
      */
     public void indexWorkspace() {
         try {
-            Files.walk(rootFolder.toPath()).filter(path -> path.toString().endsWith(".q3")).forEach(path -> {
-                File file = path.toFile();
-                files.put(file.toURI().normalize().toString(), file);
-            });
+            Files.walk(rootFolder.toPath()).filter(path -> path.toString().endsWith(".q3")).forEach(path -> files.put(path, path.toFile()));
         } catch (IOException e) {
             languageClient.logMessage(new MessageParams(MessageType.Error, "Error indexing workspace: " + e));
         }
     }
-
-    private String fixURI(String uri) {
-        try {
-            URI parsedURI = new URI(uri);
-            if (!parsedURI.isAbsolute()) throw new URISyntaxException(uri, "URI is not absolute");
-            return parsedURI.normalize().toString().replace("file:///", "file:/");
-        } catch (URISyntaxException e) {
-            languageClient.logMessage(new MessageParams(MessageType.Error, "Error parsing URI: " + e));
-            return "";
-        }
-    }
-
     private void readContentIntoBuffer(BufferedFile bufferedFile) {
         try {
             List<String> lines = Files.readAllLines(bufferedFile.toPath());
