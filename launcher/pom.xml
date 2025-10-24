@@ -13,12 +13,6 @@
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>RELEASE</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <parent>
@@ -63,7 +57,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>/home/aron/Development/TypeScript/q3Extension/server</outputDirectory>
+                            <outputDirectory>/home/aron/q3Extension/server</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${basedir}/target</directory>
